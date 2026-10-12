@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { suggestedPrice } from "./channel";
+import { suggestedPrice, suggestedPriceWithTiers } from "./channel";
 
 const base = { cost: 2.8, margin: 1.5, discount: 0, tax: 0 };
 
@@ -31,5 +31,27 @@ describe("preço sugerido por canal", () => {
 
   it("recusa comissão + imposto de 100% ou mais", () => {
     expect(() => suggestedPrice({ ...base, commission: 0.8, tax: 0.2, fixedFee: 0 })).toThrow();
+  });
+});
+
+describe("preço com faixas (exemplo: Mercado Livre)", () => {
+  const mercadoLivre = [
+    { minPrice: 0, maxPrice: 79, commission: 0.12, fixedFee: 6.5 },
+    { minPrice: 79, maxPrice: null, commission: 0.12, fixedFee: 0 },
+  ];
+
+  it("chaveiro cai na faixa 1: R$ 15,34", () => {
+    const result = suggestedPriceWithTiers({ ...base, tiers: mercadoLivre });
+    expect(result.price.toFixed(2)).toBe("15.34");
+  });
+
+  it("peça de R$ 100 limpo cai na faixa 2: R$ 113,64", () => {
+    const result = suggestedPriceWithTiers({ ...base, cost: 40, tiers: mercadoLivre });
+    expect(result.price.toFixed(2)).toBe("113.64");
+  });
+
+  it("peça entre as faixas vai para o piso da faixa 2: R$ 79,00", () => {
+    const result = suggestedPriceWithTiers({ ...base, cost: 26, tiers: mercadoLivre });
+    expect(result.price.toFixed(2)).toBe("79.00");
   });
 });

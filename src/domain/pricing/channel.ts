@@ -9,6 +9,17 @@ export type PriceInput = {
   tax: Decimal.Value;
 };
 
+export type FeeTier = {
+  minPrice: Decimal.Value;
+  maxPrice: Decimal.Value | null;
+  commission: Decimal.Value;
+  fixedFee: Decimal.Value;
+};
+
+export type TieredPriceInput = Omit<PriceInput, "commission" | "fixedFee"> & {
+  tiers: FeeTier[];
+};
+
 export function suggestedPrice(input: PriceInput) {
   const one = new Decimal(1);
 
@@ -23,4 +34,27 @@ export function suggestedPrice(input: PriceInput) {
     .mul(one.minus(input.discount));
 
   return priceBeforeFees.plus(input.fixedFee).div(keptShare);
+}
+
+export function suggestedPriceWithTiers(input: TieredPriceInput) {
+  const { tiers, ...rest } = input;
+  let best: { price: Decimal; tier: FeeTier } | null = null;
+
+  for (const tier of tiers) {
+    const computed = suggestedPrice({ ...rest, commission: tier.commission, fixedFee: tier.fixedFee });
+
+    // Se o preço não chega ao piso da faixa, sobe até o piso
+    const price = Decimal.max(computed, tier.minPrice);
+
+    const fitsTier = tier.maxPrice === null || price.lt(tier.maxPrice);
+    if (fitsTier && (best === null || price.lt(best.price))) {
+      best = { price, tier };
+    }
+  }
+
+  if (best === null) {
+    throw new Error("Nenhuma faixa de taxa serve para esse preço. Confira as faixas do canal.");
+  }
+
+  return best;
 }

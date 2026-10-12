@@ -62,7 +62,11 @@ export function suppliesCostPerPiece(supplies: SupplyUsage[]) {
 
 export function pieceCost(input: PieceCostInput) {
   const filament = filamentCostPerPiece(input.filaments, input.piecesPerPlate);
-  const energy = hourlyCostPerPiece(input.energyCostPerHour, input.plateMinutes, input.piecesPerPlate);
+  const energy = hourlyCostPerPiece(
+    input.energyCostPerHour,
+    input.plateMinutes,
+    input.piecesPerPlate,
+  );
   const wear = hourlyCostPerPiece(input.wearCostPerHour, input.plateMinutes, input.piecesPerPlate);
 
   // Reserva de falhas só sobre o que se perde quando a placa falha

@@ -41,7 +41,11 @@ export function suggestedPriceWithTiers(input: TieredPriceInput) {
   let best: { price: Decimal; tier: FeeTier } | null = null;
 
   for (const tier of tiers) {
-    const computed = suggestedPrice({ ...rest, commission: tier.commission, fixedFee: tier.fixedFee });
+    const computed = suggestedPrice({
+      ...rest,
+      commission: tier.commission,
+      fixedFee: tier.fixedFee,
+    });
 
     // Se o preço não chega ao piso da faixa, sobe até o piso
     const price = Decimal.max(computed, tier.minPrice);

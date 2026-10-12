@@ -75,3 +75,71 @@ model FixedExpense {
   monthlyAmount Decimal @db.Decimal(10, 2)
   active        Boolean @default(true)
 }
+
+// ---------- Estoque de filamentos ----------
+
+enum FilamentMovementType {
+  WEIGH_IN    // pesagem: grams = peso líquido real (substitui o saldo)
+  PURCHASE    // compra: grams positivo
+  CONSUMPTION // consumo: grams negativo
+  ADJUSTMENT  // ajuste manual: positivo ou negativo
+}
+
+model Filament {
+  id             String             @id @default(cuid())
+  color          String
+  brand          String
+  material       String             @default("PLA")
+  rollPrice      Decimal            @db.Decimal(10, 2)
+  rollNetGrams   Int                @default(1000)
+  spoolTareGrams Decimal            @default(200) @db.Decimal(7, 1)
+  active         Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  movements      FilamentMovement[]
+
+  @@unique([color, brand, material])
+}
+
+model FilamentMovement {
+  id         String               @id @default(cuid())
+  filamentId String
+  filament   Filament             @relation(fields: [filamentId], references: [id])
+  type       FilamentMovementType
+  grams      Decimal              @db.Decimal(8, 1)
+  occurredAt DateTime             @default(now())
+  note       String?
+  createdAt  DateTime             @default(now())
+
+  @@index([filamentId, occurredAt])
+}
+
+// ---------- Insumos ----------
+
+enum SupplyMovementType {
+  PURCHASE   // compra: quantity positivo
+  USE        // uso em venda: quantity negativo
+  ADJUSTMENT // ajuste manual
+}
+
+model Supply {
+  id           String           @id @default(cuid())
+  name         String           @unique
+  packPrice    Decimal          @db.Decimal(10, 2)
+  packQuantity Int
+  active       Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  movements    SupplyMovement[]
+}
+
+model SupplyMovement {
+  id         String             @id @default(cuid())
+  supplyId   String
+  supply     Supply             @relation(fields: [supplyId], references: [id])
+  type       SupplyMovementType
+  quantity   Int
+  occurredAt DateTime           @default(now())
+  note       String?
+  createdAt  DateTime           @default(now())
+
+  @@index([supplyId, occurredAt])
+}

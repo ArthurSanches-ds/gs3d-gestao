@@ -64,6 +64,12 @@ export default async function FilamentosPage() {
                   >
                     Comprei
                   </Link>
+                  <Link
+                    href={`/filamentos/${filament.id}/pesar`}
+                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                  >
+                    Pesar
+                  </Link>
                 </div>
               </CardContent>
             </Card>

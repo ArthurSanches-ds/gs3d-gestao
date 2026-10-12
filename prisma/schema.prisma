@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Acesso ----------
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+// ---------- Parâmetros ----------
+
+model Settings {
+  id                   Int      @id @default(1)
+  printerPrice         Decimal  @db.Decimal(10, 2)
+  printerLifetimeHours Int
+  powerKw              Decimal  @db.Decimal(6, 3)
+  energyTariff         Decimal  @db.Decimal(8, 4)
+  laborHourlyRate      Decimal  @db.Decimal(10, 2)
+  defaultLaborMinutes  Int
+  failureReserve       Decimal  @db.Decimal(5, 4)
+  margin               Decimal  @db.Decimal(6, 4)
+  tax                  Decimal  @db.Decimal(5, 4)
+  rentRate             Decimal  @db.Decimal(5, 4)
+  lowFilamentGrams     Int
+  salaryGoal           Decimal  @db.Decimal(10, 2)
+  updatedAt            DateTime @updatedAt
+}
+
+model SalesChannel {
+  id     String           @id @default(cuid())
+  name   String           @unique
+  active Boolean          @default(true)
+  tiers  ChannelFeeTier[]
+}
+
+model ChannelFeeTier {
+  id         String       @id @default(cuid())
+  channelId  String
+  channel    SalesChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  minPrice   Decimal      @db.Decimal(10, 2)
+  maxPrice   Decimal?     @db.Decimal(10, 2)
+  commission Decimal      @db.Decimal(5, 4)
+  fixedFee   Decimal      @db.Decimal(10, 2)
+}
+
+model PaymentMethod {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  feeRate      Decimal @db.Decimal(5, 4)
+  installments Int     @default(1)
+  sortOrder    Int     @default(0)
+}
+
+model ProfitBucket {
+  id        String  @id @default(cuid())
+  key       String  @unique
+  name      String
+  rate      Decimal @db.Decimal(5, 4)
+  sortOrder Int     @default(0)
+}
+
+model FixedExpense {
+  id            String  @id @default(cuid())
+  name          String
+  monthlyAmount Decimal @db.Decimal(10, 2)
+  active        Boolean @default(true)
+}

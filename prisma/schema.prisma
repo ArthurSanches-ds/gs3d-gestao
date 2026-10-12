@@ -41,6 +41,7 @@ model SalesChannel {
   name   String           @unique
   active Boolean          @default(true)
   tiers  ChannelFeeTier[]
+  sales  Sale[]
 }
 
 model ChannelFeeTier {
@@ -59,6 +60,7 @@ model PaymentMethod {
   feeRate      Decimal @db.Decimal(5, 4)
   installments Int     @default(1)
   sortOrder    Int     @default(0)
+  sales        Sale[]
 }
 
 model ProfitBucket {
@@ -140,9 +142,11 @@ model SupplyMovement {
   supplyId   String
   supply     Supply             @relation(fields: [supplyId], references: [id])
   type       SupplyMovementType
-  quantity   Int
+  quantity   Decimal            @db.Decimal(8, 2)
   occurredAt DateTime           @default(now())
   note       String?
+  saleItemId String?
+  saleItem   SaleItem?          @relation(fields: [saleItemId], references: [id])
   createdAt  DateTime           @default(now())
 
   @@index([supplyId, occurredAt])
@@ -165,6 +169,7 @@ model Product {
   supplies       ProductSupply[]
   productionRuns ProductionRun[]
   movements      ProductMovement[]
+  saleItems      SaleItem[]
 }
 
 model ProductFilament {
@@ -222,7 +227,49 @@ model ProductMovement {
   note            String?
   productionRunId String?
   productionRun   ProductionRun?      @relation(fields: [productionRunId], references: [id])
+  saleItemId      String?
+  saleItem        SaleItem?           @relation(fields: [saleItemId], references: [id])
   createdAt       DateTime            @default(now())
 
   @@index([productId, occurredAt])
+}
+
+// ---------- Vendas ----------
+
+model Sale {
+  id                String         @id @default(cuid())
+  occurredAt        DateTime       @default(now())
+  customerName      String?
+  channelId         String
+  channel           SalesChannel   @relation(fields: [channelId], references: [id])
+  paymentMethodId   String? // vazio = marketplace (taxa de pagamento já está na comissão)
+  paymentMethod     PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  passFeeToCustomer Boolean        @default(false)
+  // Fotografia da maquininha no momento da venda
+  cardFeeRate       Decimal        @default(0) @db.Decimal(5, 4)
+  cardFee           Decimal        @default(0) @db.Decimal(10, 2)
+  amountCharged     Decimal        @db.Decimal(10, 2) // total que o cliente pagou
+  notes             String?
+  createdAt         DateTime       @default(now())
+  items             SaleItem[]
+
+  @@index([occurredAt])
+}
+
+model SaleItem {
+  id               String            @id @default(cuid())
+  saleId           String
+  sale             Sale              @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product           @relation(fields: [productId], references: [id])
+  quantity         Int
+  unitPrice        Decimal           @db.Decimal(10, 2)
+  // Fotografia do custo e das taxas no momento da venda (por unidade)
+  unitCost         Decimal           @db.Decimal(10, 4)
+  unitLaborCost    Decimal           @db.Decimal(10, 4)
+  unitWearCost     Decimal           @db.Decimal(10, 4)
+  commissionRate   Decimal           @db.Decimal(5, 4)
+  fixedFee         Decimal           @db.Decimal(10, 2)
+  productMovements ProductMovement[]
+  supplyMovements  SupplyMovement[]
 }

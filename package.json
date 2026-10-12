@@ -11,7 +11,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "check:stock": "tsx scripts/check-stock.ts"
   },
   "dependencies": {
     "@prisma/adapter-neon": "^7.10.0",

@@ -1,6 +1,11 @@
 import "dotenv/config";
 import { prisma } from "../src/lib/db";
 
+const BRAND = "Onyon 3D";
+const IMPORT_NOTE = "Importado da planilha GS3D_gestao";
+
+// ---------- Parâmetros ----------
+
 async function seedSettings() {
   const values = {
     printerPrice: 2500,
@@ -57,7 +62,6 @@ async function seedChannels() {
       create: { name },
     });
 
-    // Substitui as faixas antigas pelas da lista
     await prisma.channelFeeTier.deleteMany({ where: { channelId: channel.id } });
     await prisma.channelFeeTier.createMany({
       data: tiers.map((tier) => ({ ...tier, channelId: channel.id })),
@@ -111,12 +115,264 @@ async function seedProfitBuckets() {
   }
 }
 
+// ---------- Dados da planilha ----------
+
+// Apaga o que foi importado antes, para o script poder rodar de novo sem duplicar
+async function cleanPreviousImport() {
+  await prisma.filamentMovement.deleteMany({ where: { note: IMPORT_NOTE } });
+  await prisma.productionRun.deleteMany({ where: { note: IMPORT_NOTE } });
+}
+
+async function seedFilaments() {
+  // Peso líquido na pesagem de 24/09/2026 (balança − 200 g de carretel)
+  const weighIns = [
+    { color: "Branco", netGrams: 882 },
+    { color: "Preto", netGrams: 712 },
+    { color: "Marrom claro", netGrams: 942 },
+    { color: "Laranja", netGrams: 808 },
+    { color: "Vermelho", netGrams: 853 },
+    { color: "Amarelo", netGrams: 937 },
+    { color: "Azul claro", netGrams: 949 },
+    { color: "Verde", netGrams: 933 },
+  ];
+  const weighDate = new Date("2026-09-24T00:00:00-03:00");
+
+  const ids: Record<string, string> = {};
+
+  for (const { color, netGrams } of weighIns) {
+    const filament = await prisma.filament.upsert({
+      where: { color_brand_material: { color, brand: BRAND, material: "PLA" } },
+      update: {},
+      create: { color, brand: BRAND, material: "PLA", rollPrice: 90, rollNetGrams: 1000 },
+    });
+
+    await prisma.filamentMovement.create({
+      data: {
+        filamentId: filament.id,
+        type: "WEIGH_IN",
+        grams: netGrams,
+        occurredAt: weighDate,
+        note: IMPORT_NOTE,
+      },
+    });
+
+    ids[color] = filament.id;
+  }
+
+  return ids;
+}
+
+async function seedSupplies() {
+  const supplies = [
+    { name: "Argola de chaveiro", packPrice: 23.65, packQuantity: 100 },
+    { name: "Envelope de segurança", packPrice: 25, packQuantity: 50 },
+    { name: "Caixa de papelão pequena", packPrice: 40, packQuantity: 25 },
+    { name: "Saquinho transparente", packPrice: 10, packQuantity: 100 },
+    { name: "Tag / cartão de agradecimento", packPrice: 20, packQuantity: 100 },
+    { name: "Adesivo com logo", packPrice: 60, packQuantity: 500 },
+    { name: "Parafuso 4mm + bucha 6", packPrice: 12, packQuantity: 20 },
+    { name: "Switch de teclado", packPrice: 28.9, packQuantity: 10 },
+  ];
+
+  const ids: Record<string, string> = {};
+
+  for (const supply of supplies) {
+    const saved = await prisma.supply.upsert({
+      where: { name: supply.name },
+      update: supply,
+      create: supply,
+    });
+    ids[supply.name] = saved.id;
+  }
+
+  return ids;
+}
+
+async function seedProducts(
+  filamentIds: Record<string, string>,
+  supplyIds: Record<string, string>,
+) {
+  const products = [
+    {
+      name: "Chaveiro fazendinha recortada",
+      piecesPerPlate: 5,
+      plateMinutes: 113,
+      filaments: [
+        { color: "Branco", gramsPerPlate: 22.9 },
+        { color: "Preto", gramsPerPlate: 1.6 },
+        { color: "Marrom claro", gramsPerPlate: 8.7 },
+      ],
+      supplies: [{ name: "Argola de chaveiro", quantityPerPiece: 1 }],
+    },
+    {
+      name: "Chaveiro fazendinha tábuas",
+      piecesPerPlate: 5,
+      plateMinutes: 117,
+      filaments: [
+        { color: "Branco", gramsPerPlate: 24.4 },
+        { color: "Preto", gramsPerPlate: 1.6 },
+        { color: "Marrom claro", gramsPerPlate: 8.5 },
+      ],
+      supplies: [{ name: "Argola de chaveiro", quantityPerPiece: 1 }],
+    },
+  ];
+
+  for (const product of products) {
+    const recipe = {
+      filaments: {
+        create: product.filaments.map((f) => ({
+          filamentId: filamentIds[f.color],
+          gramsPerPlate: f.gramsPerPlate,
+        })),
+      },
+      supplies: {
+        create: product.supplies.map((s) => ({
+          supplyId: supplyIds[s.name],
+          quantityPerPiece: s.quantityPerPiece,
+        })),
+      },
+    };
+
+    const existing = await prisma.product.findFirst({ where: { name: product.name } });
+
+    if (existing) {
+      // Refaz a ficha técnica do zero
+      await prisma.productFilament.deleteMany({ where: { productId: existing.id } });
+      await prisma.productSupply.deleteMany({ where: { productId: existing.id } });
+      await prisma.product.update({
+        where: { id: existing.id },
+        data: {
+          piecesPerPlate: product.piecesPerPlate,
+          plateMinutes: product.plateMinutes,
+          ...recipe,
+        },
+      });
+    } else {
+      await prisma.product.create({
+        data: {
+          name: product.name,
+          piecesPerPlate: product.piecesPerPlate,
+          plateMinutes: product.plateMinutes,
+          isCustom: true,
+          ...recipe,
+        },
+      });
+    }
+  }
+}
+
+async function seedConsumptionHistory(filamentIds: Record<string, string>) {
+  // [data, descrição, [cor, gramas][]] — aba Consumo da planilha
+  const lots: [string, string, [string, number][]][] = [
+    [
+      "2026-09-23",
+      "PIKACHU",
+      [
+        ["Vermelho", 4.6],
+        ["Amarelo", 24.2],
+        ["Preto", 2.7],
+      ],
+    ],
+    [
+      "2026-09-23",
+      "banguela",
+      [
+        ["Verde", 5.2],
+        ["Preto", 53.6],
+      ],
+    ],
+    [
+      "2026-09-24",
+      "charmander x8",
+      [
+        ["Branco", 36.6],
+        ["Vermelho", 13.4],
+        ["Laranja", 77.1],
+        ["Preto", 3.5],
+      ],
+    ],
+    [
+      "2026-09-25",
+      "squarto",
+      [
+        ["Branco", 48.8],
+        ["Preto", 3.5],
+        ["Azul claro", 101.9],
+        ["Marrom claro", 36.7],
+      ],
+    ],
+    ["2026-09-27", "suporte", [["Verde", 2.1]]],
+    ["2026-09-27", "suporte", [["Amarelo", 2.1]]],
+    ["2026-09-27", "porta chave", [["Marrom claro", 86.4]]],
+    [
+      "2026-09-27",
+      "decoração cachorro",
+      [
+        ["Branco", 22.2],
+        ["Preto", 5.0],
+      ],
+    ],
+    ["2026-09-28", "porta chave ripado", [["Marrom claro", 81.5]]],
+    ["2026-09-29", "porta chave ripado", [["Preto", 81.5]]],
+    ["2026-10-07", "porta sílica", [["Preto", 32.1]]],
+    [
+      "2026-10-07",
+      "chaveiros fazendinha",
+      [
+        ["Branco", 54.9],
+        ["Preto", 2.1],
+        ["Marrom claro", 10.6],
+      ],
+    ],
+    [
+      "2026-10-07",
+      "chaveiros fazendinha",
+      [
+        ["Branco", 22.4],
+        ["Preto", 0.9],
+        ["Marrom claro", 4.3],
+      ],
+    ],
+  ];
+
+  for (const [date, description, lines] of lots) {
+    // Meio-dia: garante que o consumo do dia 24 venha depois da pesagem do dia 24
+    const occurredAt = new Date(`${date}T12:00:00-03:00`);
+
+    await prisma.productionRun.create({
+      data: {
+        description,
+        plates: 1,
+        goodPieces: 0,
+        occurredAt,
+        note: IMPORT_NOTE,
+        filamentMovements: {
+          create: lines.map(([color, grams]) => ({
+            filamentId: filamentIds[color],
+            type: "CONSUMPTION",
+            grams: -grams,
+            occurredAt,
+            note: IMPORT_NOTE,
+          })),
+        },
+      },
+    });
+  }
+}
+
 async function main() {
   await seedSettings();
   await seedChannels();
   await seedPaymentMethods();
   await seedProfitBuckets();
-  console.log("Parâmetros importados com sucesso.");
+  console.log("Parâmetros importados.");
+
+  await cleanPreviousImport();
+  const filamentIds = await seedFilaments();
+  const supplyIds = await seedSupplies();
+  await seedProducts(filamentIds, supplyIds);
+  await seedConsumptionHistory(filamentIds);
+  console.log("Filamentos, insumos, produtos e consumo importados.");
 }
 
 main()

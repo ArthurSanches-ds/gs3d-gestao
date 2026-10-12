@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { getFilamentsWithBalance } from "@/server/filaments";
@@ -53,6 +55,15 @@ export default async function FilamentosPage() {
                     className={`h-full rounded-full ${filament.isLow ? "bg-destructive" : "bg-primary"}`}
                     style={{ width: `${percent}%` }}
                   />
+                </div>
+
+                <div className="flex gap-2">
+                  <Link
+                    href={`/filamentos/${filament.id}/compra`}
+                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                  >
+                    Comprei
+                  </Link>
                 </div>
               </CardContent>
             </Card>

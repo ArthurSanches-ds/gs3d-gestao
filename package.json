@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:seed": "tsx prisma/seed.ts",
-    "check:stock": "tsx scripts/check-stock.ts"
+    "check:stock": "tsx scripts/check-stock.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/adapter-neon": "^7.10.0",

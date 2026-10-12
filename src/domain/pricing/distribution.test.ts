@@ -45,7 +45,12 @@ describe("distribuição do lucro do mês", () => {
   });
 
   it("lucro necessário para bater a meta = R$ 5.000", () => {
-    expect(distributeProfit(month).profitNeededForGoal.toFixed(2)).toBe("5000.00");
+    expect(distributeProfit(month).profitNeededForGoal?.toFixed(2)).toBe("5000.00");
+  });
+
+  it("sem destino de salário, o lucro necessário não tem como ser calculado", () => {
+    const noSalary = [{ key: "farmFund", rate: 1 }];
+    expect(distributeProfit({ ...month, buckets: noSalary }).profitNeededForGoal).toBeNull();
   });
 
   it("mês no prejuízo: aluguel e distribuição zerados", () => {

@@ -124,3 +124,75 @@ export async function registerWeighIn(
   revalidatePath("/filamentos");
   redirect("/filamentos");
 }
+
+// ---------- Nova cor ----------
+
+// "dourado silk" → "Dourado silk"
+const capitalize = (value: string) => value.charAt(0).toLocaleUpperCase("pt-BR") + value.slice(1);
+
+const text = (label: string, max: number) =>
+  z.string().trim().min(1, `Informe ${label}.`).max(max, `Máximo de ${max} caracteres.`);
+
+const newFilamentSchema = z.object({
+  color: text("a cor", 40).transform(capitalize),
+  brand: text("a marca", 40),
+  material: text("o material", 20).transform((value) => value.toUpperCase()),
+  rollPrice: decimalField({ min: 0, minExclusive: true }),
+  rollNetGrams: integerField({ min: 0, minExclusive: true }),
+  spoolTareGrams: decimalField({ min: 0 }),
+  initialRolls: integerField({ min: 0 }),
+});
+
+const NEW_FILAMENT_FIELDS = Object.keys(newFilamentSchema.shape);
+
+export async function createFilament(
+  _previousState: FilamentFormState,
+  formData: FormData,
+): Promise<FilamentFormState> {
+  const values = readForm(formData, NEW_FILAMENT_FIELDS);
+
+  const result = newFilamentSchema.safeParse(values);
+  if (!result.success) {
+    return {
+      status: "error",
+      message: "Confira os campos destacados.",
+      fieldErrors: z.flattenError(result.error).fieldErrors,
+      values,
+    };
+  }
+
+  const { initialRolls, ...data } = result.data;
+
+  // Ignora maiúsculas/minúsculas: "preto" e "Preto" são a mesma cor
+  const existing = await prisma.filament.findFirst({
+    where: {
+      color: { equals: data.color, mode: "insensitive" },
+      brand: { equals: data.brand, mode: "insensitive" },
+      material: { equals: data.material, mode: "insensitive" },
+    },
+  });
+  if (existing) {
+    return {
+      status: "error",
+      message: `${existing.color} ${existing.brand} ${existing.material} já está cadastrado. Use "Comprei" na lista.`,
+      values,
+    };
+  }
+
+  // Cria a cor já com o estoque inicial: rolos lacrados × peso de cada rolo
+  await prisma.filament.create({
+    data: {
+      ...data,
+      movements: {
+        create: {
+          type: "WEIGH_IN",
+          grams: initialRolls * data.rollNetGrams,
+          note: "Estoque inicial no cadastro",
+        },
+      },
+    },
+  });
+
+  revalidatePath("/filamentos");
+  redirect("/filamentos");
+}

@@ -13,12 +13,19 @@ export default async function FilamentosPage() {
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <h1 className="text-2xl font-bold">Filamentos</h1>
-      <p className="text-muted-foreground mt-1 text-sm">
-        {lowCount === 0
-          ? "Nenhuma cor abaixo do alerta."
-          : `${lowCount} ${lowCount === 1 ? "cor acabando" : "cores acabando"}.`}
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Filamentos</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {lowCount === 0
+              ? "Nenhuma cor abaixo do alerta."
+              : `${lowCount} ${lowCount === 1 ? "cor acabando" : "cores acabando"}.`}
+          </p>
+        </div>
+        <Link href="/filamentos/nova" className={buttonVariants()}>
+          Nova cor
+        </Link>
+      </div>
 
       {filaments.length === 0 && (
         <p className="text-muted-foreground mt-6 text-sm">Nenhum filamento cadastrado.</p>

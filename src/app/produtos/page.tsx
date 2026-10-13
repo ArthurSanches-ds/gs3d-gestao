@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { getProductsWithCost } from "@/server/products";
@@ -10,10 +12,17 @@ export default async function ProdutosPage() {
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <h1 className="text-2xl font-bold">Produtos</h1>
-      <p className="text-muted-foreground mt-1 text-sm">
-        Custo por peça e preço sugerido em cada canal, calculados com os Parâmetros atuais.
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Produtos</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Custo por peça e preço sugerido em cada canal, calculados com os Parâmetros atuais.
+          </p>
+        </div>
+        <Link href="/produtos/novo" className={buttonVariants()}>
+          Novo produto
+        </Link>
+      </div>
 
       {products.length === 0 && (
         <p className="text-muted-foreground mt-6 text-sm">Nenhum produto cadastrado.</p>

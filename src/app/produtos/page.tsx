@@ -77,6 +77,13 @@ export default async function ProdutosPage() {
                   </div>
                 ))}
               </div>
+
+              <Link
+                href={`/produtos/${product.id}/produzir`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                + Produzir
+              </Link>
             </CardContent>
           </Card>
         ))}

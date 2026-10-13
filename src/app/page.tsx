@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 const SECTIONS = [
   { href: "/filamentos", title: "Filamentos", description: "Saldo por cor, compras e pesagens" },
+  { href: "/insumos", title: "Insumos", description: "Argolas, embalagens e outros itens" },
   {
     href: "/parametros",
     title: "Parâmetros",

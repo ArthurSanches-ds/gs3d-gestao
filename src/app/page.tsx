@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 
 const SECTIONS = [
+  { href: "/produtos", title: "Produtos", description: "Custo por peça e preço por canal" },
   { href: "/filamentos", title: "Filamentos", description: "Saldo por cor, compras e pesagens" },
   { href: "/insumos", title: "Insumos", description: "Argolas, embalagens e outros itens" },
   {

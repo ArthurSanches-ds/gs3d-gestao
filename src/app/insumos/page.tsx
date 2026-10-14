@@ -62,6 +62,12 @@ export default async function InsumosPage() {
                 >
                   Contar
                 </Link>
+                <Link
+                  href={`/insumos/${supply.id}/editar`}
+                  className={buttonVariants({ variant: "ghost", size: "sm" })}
+                >
+                  Editar
+                </Link>
               </div>
             </CardContent>
           </Card>

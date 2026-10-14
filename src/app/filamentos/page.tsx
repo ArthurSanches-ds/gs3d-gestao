@@ -77,6 +77,12 @@ export default async function FilamentosPage() {
                   >
                     Pesar
                   </Link>
+                  <Link
+                    href={`/filamentos/${filament.id}/editar`}
+                    className={buttonVariants({ variant: "ghost", size: "sm" })}
+                  >
+                    Editar
+                  </Link>
                 </div>
               </CardContent>
             </Card>

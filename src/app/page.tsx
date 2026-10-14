@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 
 const SECTIONS = [
+  { href: "/orcamento", title: "Orçamento", description: "Preço na hora e tabela para o WhatsApp" },
   { href: "/vendas", title: "Vendas", description: "Registrar vendas e ver o lucro do mês" },
   {
     href: "/produtos",

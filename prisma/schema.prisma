@@ -245,6 +245,7 @@ model Sale {
   paymentMethodId   String? // vazio = marketplace (taxa de pagamento já está na comissão)
   paymentMethod     PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   passFeeToCustomer Boolean        @default(false)
+  taxRate           Decimal        @default(0) @db.Decimal(5, 4) // imposto do dia da venda
   // Fotografia da maquininha no momento da venda
   cardFeeRate       Decimal        @default(0) @db.Decimal(5, 4)
   cardFee           Decimal        @default(0) @db.Decimal(10, 2)

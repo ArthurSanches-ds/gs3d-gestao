@@ -2,7 +2,12 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 
 const SECTIONS = [
-  { href: "/produtos", title: "Produtos", description: "Custo por peça e preço por canal" },
+  { href: "/vendas", title: "Vendas", description: "Registrar vendas e ver o lucro do mês" },
+  {
+    href: "/produtos",
+    title: "Produtos",
+    description: "Custo por peça, preço por canal e produção",
+  },
   { href: "/filamentos", title: "Filamentos", description: "Saldo por cor, compras e pesagens" },
   { href: "/insumos", title: "Insumos", description: "Argolas, embalagens e outros itens" },
   {

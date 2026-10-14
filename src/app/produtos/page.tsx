@@ -78,12 +78,20 @@ export default async function ProdutosPage() {
                 ))}
               </div>
 
-              <Link
-                href={`/produtos/${product.id}/produzir`}
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-              >
-                + Produzir
-              </Link>
+              <div className="flex gap-2">
+                <Link
+                  href={`/produtos/${product.id}/produzir`}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  + Produzir
+                </Link>
+                <Link
+                  href={`/produtos/${product.id}/editar`}
+                  className={buttonVariants({ variant: "ghost", size: "sm" })}
+                >
+                  Editar
+                </Link>
+              </div>
             </CardContent>
           </Card>
         ))}

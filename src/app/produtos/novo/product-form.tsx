@@ -5,15 +5,21 @@ import { useActionState, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { createProduct, type ProductFormState } from "../actions";
+import type { ProductFormState, RecipeLine } from "../actions";
 
 export type Option = { id: string; label: string };
 
 type Line = { key: number; id: string; amount: string };
 
 type Props = {
+  action: (state: ProductFormState, formData: FormData) => Promise<ProductFormState>;
   filamentOptions: Option[];
   supplyOptions: Option[];
+  submitLabel: string;
+  productId?: string; // só na edição
+  initialValues?: Record<string, string>;
+  initialFilaments?: RecipeLine[];
+  initialSupplies?: RecipeLine[];
 };
 
 const initialState: ProductFormState = { status: "idle" };
@@ -22,18 +28,25 @@ const selectClass =
   "h-9 w-full min-w-0 rounded-md border bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 let nextKey = 1;
-const emptyLine = (): Line => ({ key: nextKey++, id: "", amount: "" });
+const toLine = (line: RecipeLine): Line => ({ key: nextKey++, ...line });
+const emptyLine = (): Line => toLine({ id: "", amount: "" });
 
-export function ProductForm({ filamentOptions, supplyOptions }: Props) {
-  const [state, formAction, pending] = useActionState(createProduct, initialState);
-  const [filaments, setFilaments] = useState<Line[]>(() => [emptyLine()]);
-  const [supplies, setSupplies] = useState<Line[]>([]);
+export function ProductForm(props: Props) {
+  const [state, formAction, pending] = useActionState(props.action, initialState);
+  const [filaments, setFilaments] = useState<Line[]>(() =>
+    props.initialFilaments?.length ? props.initialFilaments.map(toLine) : [emptyLine()],
+  );
+  const [supplies, setSupplies] = useState<Line[]>(() => (props.initialSupplies ?? []).map(toLine));
 
-  const values = state.values ?? {};
+  // Depois de um erro, mostra o que foi digitado; senão, os valores iniciais
+  const values = state.values ?? props.initialValues ?? {};
   const error = (name: string) => state.fieldErrors?.[name]?.[0];
+  const isEditing = Boolean(props.productId);
 
   return (
     <form action={formAction} className="space-y-6">
+      {props.productId && <input type="hidden" name="productId" value={props.productId} />}
+
       <section className="space-y-4">
         <TextField
           name="name"
@@ -91,6 +104,13 @@ export function ProductForm({ filamentOptions, supplyOptions }: Props) {
           <input type="checkbox" name="isCustom" defaultChecked={values.isCustom === "on"} />
           Produto personalizado (encomenda de um cliente)
         </label>
+
+        {isEditing && (
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="archived" defaultChecked={values.archived === "on"} />
+            Arquivar (some da lista e do orçamento; o histórico continua)
+          </label>
+        )}
       </section>
 
       <RecipeSection
@@ -99,7 +119,7 @@ export function ProductForm({ filamentOptions, supplyOptions }: Props) {
         idName="filamentId"
         amountName="gramsPerPlate"
         amountLabel="g"
-        options={filamentOptions}
+        options={props.filamentOptions}
         lines={filaments}
         setLines={setFilaments}
         addLabel="+ Adicionar cor"
@@ -112,7 +132,7 @@ export function ProductForm({ filamentOptions, supplyOptions }: Props) {
         idName="supplyId"
         amountName="quantityPerPiece"
         amountLabel="un."
-        options={supplyOptions}
+        options={props.supplyOptions}
         lines={supplies}
         setLines={setSupplies}
         addLabel="+ Adicionar insumo"
@@ -127,7 +147,7 @@ export function ProductForm({ filamentOptions, supplyOptions }: Props) {
 
       <div className="flex gap-3">
         <Button type="submit" disabled={pending}>
-          {pending ? "Salvando..." : "Cadastrar produto"}
+          {pending ? "Salvando..." : props.submitLabel}
         </Button>
         <Link href="/produtos" className={buttonVariants({ variant: "outline" })}>
           Cancelar

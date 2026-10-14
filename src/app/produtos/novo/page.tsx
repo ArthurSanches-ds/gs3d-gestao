@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { createProduct } from "../actions";
 import { ProductForm } from "./product-form";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,8 @@ export default async function NovoProdutoPage() {
 
       <div className="mt-6">
         <ProductForm
+          action={createProduct}
+          submitLabel="Cadastrar produto"
           filamentOptions={filaments.map((f) => ({
             id: f.id,
             label: `${f.color} · ${f.brand} ${f.material}`,

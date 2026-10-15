@@ -9,7 +9,7 @@ import type { ProductFormState, RecipeLine } from "../actions";
 
 export type Option = { id: string; label: string };
 
-type Line = { key: number; id: string; amount: string };
+export type Line = { key: number; id: string; amount: string };
 
 type Props = {
   action: (state: ProductFormState, formData: FormData) => Promise<ProductFormState>;
@@ -29,7 +29,7 @@ const selectClass =
 
 let nextKey = 1;
 const toLine = (line: RecipeLine): Line => ({ key: nextKey++, ...line });
-const emptyLine = (): Line => toLine({ id: "", amount: "" });
+export const emptyLine = (): Line => toLine({ id: "", amount: "" });
 
 export function ProductForm(props: Props) {
   const [state, formAction, pending] = useActionState(props.action, initialState);
@@ -181,7 +181,7 @@ function TextField(props: {
   );
 }
 
-function RecipeSection(props: {
+export function RecipeSection(props: {
   title: string;
   hint: string;
   idName: string;

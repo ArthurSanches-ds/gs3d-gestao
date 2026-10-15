@@ -22,9 +22,14 @@ export default async function FilamentosPage() {
               : `${lowCount} ${lowCount === 1 ? "cor acabando" : "cores acabando"}.`}
           </p>
         </div>
-        <Link href="/filamentos/nova" className={buttonVariants()}>
-          Nova cor
-        </Link>
+        <div className="flex shrink-0 gap-2">
+          <Link href="/filamentos/avulso" className={buttonVariants({ variant: "outline" })}>
+            Consumo avulso
+          </Link>
+          <Link href="/filamentos/nova" className={buttonVariants()}>
+            Nova cor
+          </Link>
+        </div>
       </div>
 
       {filaments.length === 0 && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { Box } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/login/actions";
@@ -29,7 +30,10 @@ export function MainNav({ userName }: { userName: string | null }) {
       <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-2">
         {/* Só os links deslizam; o nome e o Sair ficam sempre visíveis */}
         <nav className="flex min-w-0 flex-1 [scrollbar-width:none] items-center gap-1 overflow-x-auto">
-          <span className="mr-2 shrink-0 font-bold">GS3D</span>
+          <Link href="/" className="text-primary mr-2 flex shrink-0 items-center gap-1.5 font-bold">
+            <Box className="size-5" aria-hidden />
+            GS3D
+          </Link>
           {LINKS.map((link) => (
             <Link
               key={link.href}

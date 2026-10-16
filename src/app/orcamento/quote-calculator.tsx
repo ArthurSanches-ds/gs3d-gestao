@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { buildQuote } from "@/domain/pricing/quote";
 import { formatMoney } from "@/lib/format";
 import { parseBrazilianNumber } from "@/lib/parse-number";
+import { createQuotePdf, quoteFileName } from "./quote-pdf";
 
 type Tier = { minPrice: number; maxPrice: number | null; commission: number; fixedFee: number };
 
@@ -35,6 +36,8 @@ export function QuoteCalculator({ products, channels, paymentMethods, margin, ta
   const [discount, setDiscount] = useState("0");
   const [customer, setCustomer] = useState("");
   const [copied, setCopied] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState("");
 
   const product = products.find((p) => p.id === productId);
   const channel = channels.find((c) => c.id === channelId);
@@ -92,6 +95,43 @@ export function QuoteCalculator({ products, channels, paymentMethods, margin, ta
     await navigator.clipboard.writeText(message);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // No celular abre o compartilhar (escolhe o WhatsApp); no PC baixa o arquivo
+  const generatePdf = async () => {
+    if (!quote || !product) return;
+    setPdfBusy(true);
+    setPdfError("");
+    try {
+      const doc = await createQuotePdf({
+        customer: customer.trim(),
+        productName: product.name,
+        quantity: quantityNumber,
+        unitPrice: quote.unitPrice.toNumber(),
+        total: quote.total.toNumber(),
+        payments: quote.payments.map((p) => ({
+          name: p.name,
+          installments: p.installments,
+          installmentValue: p.installmentValue.toNumber(),
+          total: p.total.toNumber(),
+        })),
+      });
+      const fileName = quoteFileName(customer.trim());
+      const file = new File([doc.output("blob")], fileName, { type: "application/pdf" });
+      const isPhone = window.matchMedia("(pointer: coarse)").matches;
+      if (isPhone && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Orçamento GS3D Studio" });
+      } else {
+        doc.save(fileName);
+      }
+    } catch (e) {
+      // Fechar a janela de compartilhar sem escolher nada não é erro
+      if (!(e instanceof DOMException && e.name === "AbortError")) {
+        setPdfError("Não foi possível gerar o PDF.");
+      }
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   if (products.length === 0) {
@@ -210,6 +250,9 @@ export function QuoteCalculator({ products, channels, paymentMethods, margin, ta
             <Button type="button" onClick={copy}>
               {copied ? "Copiado!" : "Copiar para o WhatsApp"}
             </Button>
+            <Button type="button" variant="outline" onClick={generatePdf} disabled={pdfBusy}>
+              {pdfBusy ? "Gerando..." : "Gerar PDF"}
+            </Button>
             {product && (
               <Link
                 href={`/produtos/${product.id}/produzir`}
@@ -219,6 +262,7 @@ export function QuoteCalculator({ products, channels, paymentMethods, margin, ta
               </Link>
             )}
           </div>
+          {pdfError && <p className="text-destructive text-sm">{pdfError}</p>}
         </>
       )}
     </div>

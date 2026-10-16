@@ -51,6 +51,7 @@
 
 /* Identidade GS3D: azul petróleo sobre fundo claro levemente frio */
 :root {
+  color-scheme: light;
   --background: oklch(0.985 0.004 220);
   --foreground: oklch(0.2 0.02 235);
   --card: oklch(1 0 0);
@@ -88,6 +89,7 @@
 /* Tema escuro: preto azulado com o petróleo mais claro, para ter contraste */
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
     --background: oklch(0.165 0.012 235);
     --foreground: oklch(0.96 0.005 220);
     --card: oklch(0.21 0.016 230);
@@ -135,5 +137,9 @@
   h1,
   h2 {
     @apply tracking-tight;
+  }
+  /* No Windows a lista do select usa a cor de fundo da opção, não a do tema */
+  option {
+    @apply bg-popover text-popover-foreground;
   }
 }

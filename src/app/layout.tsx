@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "GS3D Gestão",
   description: "Gestão de custos, preços, estoque e lucro da GS3D Studio",
+  appleWebApp: { title: "GS3D", capable: true, statusBarStyle: "black-translucent" },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

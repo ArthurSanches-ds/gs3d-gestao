@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { decimalField, integerField } from "@/lib/form-fields";
 import { weighInNetGrams } from "@/domain/stock/weigh-in";
+import { parseBrazilianNumber } from "@/lib/parse-number";
 
 export type FilamentFormState = {
   status: "idle" | "error";
@@ -143,6 +144,7 @@ const newFilamentSchema = z.object({
   rollNetGrams: integerField({ min: 0, minExclusive: true }),
   spoolTareGrams: decimalField({ min: 0 }),
   initialRolls: integerField({ min: 0 }),
+  openRollScaleGrams: z.string().trim(),
 });
 
 const NEW_FILAMENT_FIELDS = Object.keys(newFilamentSchema.shape);
@@ -163,7 +165,39 @@ export async function createFilament(
     };
   }
 
-  const { initialRolls, ...data } = result.data;
+  const { initialRolls, openRollScaleGrams, ...data } = result.data;
+
+  // Estoque inicial: rolos lacrados + o que sobra no rolo aberto (sem o carretel)
+  const openScale = openRollScaleGrams === "" ? "0" : parseBrazilianNumber(openRollScaleGrams);
+  if (openScale === null) {
+    return {
+      status: "error",
+      message: "Confira os campos destacados.",
+      fieldErrors: { openRollScaleGrams: ["Digite só o número, ex.: 660."] },
+      values,
+    };
+  }
+  let initialGrams;
+  try {
+    initialGrams =
+      Number(openScale) > 0
+        ? weighInNetGrams({
+            scaleGrams: openScale,
+            spoolTareGrams: data.spoolTareGrams,
+            closedRolls: initialRolls,
+            rollNetGrams: data.rollNetGrams,
+          })
+        : initialRolls * data.rollNetGrams;
+  } catch (error) {
+    return {
+      status: "error",
+      message: "Confira os campos destacados.",
+      fieldErrors: {
+        openRollScaleGrams: [error instanceof Error ? error.message : "Peso inválido."],
+      },
+      values,
+    };
+  }
 
   // Ignora maiúsculas/minúsculas: "preto" e "Preto" são a mesma cor
   const existing = await prisma.filament.findFirst({
@@ -183,7 +217,7 @@ export async function createFilament(
         movements: {
           create: {
             type: "WEIGH_IN",
-            grams: initialRolls * data.rollNetGrams,
+            grams: initialGrams.toString(),
             note: "Reativado no cadastro",
           },
         },
@@ -208,7 +242,7 @@ export async function createFilament(
       movements: {
         create: {
           type: "WEIGH_IN",
-          grams: initialRolls * data.rollNetGrams,
+          grams: initialGrams.toString(),
           note: "Estoque inicial no cadastro",
         },
       },

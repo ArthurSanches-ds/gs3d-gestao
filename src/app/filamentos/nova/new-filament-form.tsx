@@ -22,10 +22,10 @@ const FIELDS: FieldConfig[] = [
   { name: "rollPrice", label: "Preço do rolo (R$)", defaultValue: "90", numeric: true },
   {
     name: "rollNetGrams",
-    label: "Peso líquido do rolo (g)",
+    label: "Filamento em um rolo novo (g)",
     defaultValue: "1000",
     numeric: true,
-    hint: "Só o filamento, sem o carretel.",
+    hint: "O que vem escrito na embalagem, normalmente 1000 g. Não é o peso na balança: é com ele que o sistema calcula o preço por grama.",
   },
   {
     name: "spoolTareGrams",
@@ -39,7 +39,14 @@ const FIELDS: FieldConfig[] = [
     label: "Rolos lacrados que você tem agora",
     defaultValue: "1",
     numeric: true,
-    hint: "Vira o estoque inicial da cor. Use 0 se ainda não chegou.",
+    hint: "Rolos fechados, ainda no lacre. Use 0 se não tiver.",
+  },
+  {
+    name: "openRollScaleGrams",
+    label: "Rolo aberto na balança (g), opcional",
+    defaultValue: "",
+    numeric: true,
+    hint: "Pese o rolo que já está em uso, com carretel. O sistema desconta o carretel vazio. Deixe vazio se não tiver rolo aberto.",
   },
 ];
 

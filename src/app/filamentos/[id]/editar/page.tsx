@@ -36,9 +36,10 @@ export default async function EditarFilamentoPage({
             },
             {
               name: "rollNetGrams",
-              label: "Peso líquido do rolo (g)",
+              label: "Filamento em um rolo novo (g)",
               defaultValue: String(filament.rollNetGrams),
               numeric: true,
+              hint: "O que vem na embalagem, normalmente 1000 g. Não é o peso na balança.",
             },
             {
               name: "spoolTareGrams",

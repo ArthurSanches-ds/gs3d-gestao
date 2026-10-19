@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
+import { RemoveButton } from "@/components/remove-button";
 import { prisma } from "@/lib/db";
-import { updateProduct } from "../../actions";
+import { removeProduct, updateProduct } from "../../actions";
 import { ProductForm } from "../../novo/product-form";
 
 export const dynamic = "force-dynamic";
@@ -54,6 +55,20 @@ export default async function EditarProdutoPage({ params }: PageProps<"/produtos
           supplyOptions={supplies.map((s) => ({ id: s.id, label: s.name }))}
         />
       </div>
+
+      <section className="mt-10 space-y-2 border-t pt-6">
+        <h2 className="font-medium">Remover produto</h2>
+        <p className="text-muted-foreground text-sm">
+          Se o produto nunca foi produzido nem vendido, ele é apagado. Se já tem histórico, é
+          arquivado: some da lista e do orçamento, e as vendas antigas continuam certas.
+        </p>
+        <RemoveButton
+          action={removeProduct}
+          id={product.id}
+          label="Remover"
+          confirmText={`Remover ${product.name}?`}
+        />
+      </section>
     </main>
   );
 }

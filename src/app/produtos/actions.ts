@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { RemoveState } from "@/components/remove-button";
 import { prisma } from "@/lib/db";
 import { readForm, readList } from "@/lib/form-data";
 import { decimalField, integerField } from "@/lib/form-fields";
@@ -178,5 +179,31 @@ export async function updateProduct(
 
   revalidatePath("/produtos");
   revalidatePath("/orcamento");
+  redirect("/produtos");
+}
+
+// Nunca produzido nem vendido: apaga de vez (a receita vai junto).
+// Com histórico: só arquiva, para as vendas antigas continuarem com o custo certo.
+export async function removeProduct(
+  _previousState: RemoveState,
+  formData: FormData,
+): Promise<RemoveState> {
+  const id = String(formData.get("id") ?? "");
+  const product = await prisma.product.findUnique({
+    where: { id },
+    include: { _count: { select: { productionRuns: true, saleItems: true, movements: true } } },
+  });
+  if (!product) return { message: "Produto não encontrado." };
+
+  const { productionRuns, saleItems, movements } = product._count;
+  if (productionRuns + saleItems + movements === 0) {
+    await prisma.product.delete({ where: { id } });
+  } else {
+    await prisma.product.update({ where: { id }, data: { archived: true } });
+  }
+
+  revalidatePath("/produtos");
+  revalidatePath("/orcamento");
+  revalidatePath("/");
   redirect("/produtos");
 }

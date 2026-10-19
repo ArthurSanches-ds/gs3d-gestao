@@ -3,12 +3,20 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatMoney, formatNumber } from "@/lib/format";
+import { prisma } from "@/lib/db";
 import { getProductsWithCost } from "@/server/products";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProdutosPage() {
-  const products = await getProductsWithCost();
+  const [products, archived] = await Promise.all([
+    getProductsWithCost(),
+    prisma.product.findMany({
+      where: { archived: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   return (
     <main className="mx-auto max-w-2xl p-6">
@@ -96,6 +104,24 @@ export default async function ProdutosPage() {
           </Card>
         ))}
       </div>
+
+      {archived.length > 0 && (
+        <section className="mt-10 border-t pt-6">
+          <h2 className="font-medium">Arquivados</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Para trazer de volta, abra e desmarque &quot;Arquivar&quot;.
+          </p>
+          <ul className="mt-3 space-y-1 text-sm">
+            {archived.map((product) => (
+              <li key={product.id}>
+                <Link href={`/produtos/${product.id}/editar`} className="underline">
+                  {product.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }

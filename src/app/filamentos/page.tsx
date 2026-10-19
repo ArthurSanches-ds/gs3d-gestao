@@ -80,7 +80,7 @@ export default async function FilamentosPage() {
                     href={`/filamentos/${filament.id}/pesar`}
                     className={buttonVariants({ variant: "outline", size: "sm" })}
                   >
-                    Pesar
+                    Ajustar estoque
                   </Link>
                   <Link
                     href={`/filamentos/${filament.id}/editar`}

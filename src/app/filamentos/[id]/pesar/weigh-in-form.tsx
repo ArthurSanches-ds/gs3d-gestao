@@ -46,8 +46,10 @@ export function WeighInForm({
   const [state, formAction, pending] = useActionState(registerWeighIn, initialState);
   const [scale, setScale] = useState("");
   const [closedRolls, setClosedRolls] = useState("0");
+  const [direct, setDirect] = useState(false);
 
-  const preview = previewBalance(scale, closedRolls, spoolTareGrams, rollNetGrams);
+  const tare = direct ? 0 : spoolTareGrams;
+  const preview = previewBalance(scale, closedRolls, tare, rollNetGrams);
   const scaleError = state.fieldErrors?.scaleGrams?.[0];
   const closedError = state.fieldErrors?.closedRolls?.[0];
   const noteError = state.fieldErrors?.note?.[0];
@@ -56,20 +58,34 @@ export function WeighInForm({
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="filamentId" value={filamentId} />
 
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="direct"
+          checked={direct}
+          onChange={(event) => setDirect(event.target.checked)}
+          className="accent-primary size-4"
+        />
+        Já sei quanto tem, não vou pesar
+      </label>
+
       <Field data-invalid={scaleError ? true : undefined}>
-        <FieldLabel htmlFor="scaleGrams">Peso do rolo aberto na balança (g)</FieldLabel>
+        <FieldLabel htmlFor="scaleGrams">
+          {direct ? "Filamento no rolo aberto (g)" : "Peso do rolo aberto na balança (g)"}
+        </FieldLabel>
         <Input
           id="scaleGrams"
           name="scaleGrams"
           inputMode="decimal"
-          placeholder="Ex.: 1082"
+          placeholder={direct ? "Ex.: 500" : "Ex.: 1082"}
           value={scale}
           onChange={(event) => setScale(event.target.value)}
           aria-invalid={scaleError ? true : undefined}
         />
         <FieldDescription>
-          Pese com o carretel. O sistema desconta {formatNumber(spoolTareGrams)} g do carretel
-          vazio.
+          {direct
+            ? "Só o filamento, sem o carretel. Use 0 se o rolo aberto acabou."
+            : `Pese com o carretel. O sistema desconta ${formatNumber(spoolTareGrams)} g do carretel vazio.`}
         </FieldDescription>
         {scaleError && <FieldError>{scaleError}</FieldError>}
       </Field>

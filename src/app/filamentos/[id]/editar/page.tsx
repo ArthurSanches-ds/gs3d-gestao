@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
+import { RemoveButton } from "@/components/remove-button";
 import { SimpleForm } from "@/components/simple-form";
 import { prisma } from "@/lib/db";
-import { updateFilament } from "./actions";
+import { removeFilament, updateFilament } from "./actions";
 
 const toInput = (value: { toString(): string }) => value.toString().replace(".", ",");
 
@@ -51,6 +52,21 @@ export default async function EditarFilamentoPage({
           cancelHref="/filamentos"
         />
       </div>
+
+      <section className="mt-10 space-y-2 border-t pt-6">
+        <h2 className="font-medium">Remover filamento</h2>
+        <p className="text-muted-foreground text-sm">
+          Se a cor nunca foi usada, ela é apagada. Se já entrou em alguma produção, só some das
+          listas e o histórico das vendas continua certo. Cadastrar a mesma cor de novo traz ela de
+          volta.
+        </p>
+        <RemoveButton
+          action={removeFilament}
+          id={filament.id}
+          label="Remover"
+          confirmText={`Remover ${filament.color} ${filament.brand}?`}
+        />
+      </section>
     </main>
   );
 }

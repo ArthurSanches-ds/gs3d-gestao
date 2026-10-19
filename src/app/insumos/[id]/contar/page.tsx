@@ -13,7 +13,7 @@ export default async function ContarInsumoPage({ params }: PageProps<"/insumos/[
 
   return (
     <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-bold">Contar insumo</h1>
+      <h1 className="text-2xl font-bold">Ajustar estoque</h1>
       <p className="text-muted-foreground mt-1 text-sm">
         {supply.name} · o sistema acha que tem {formatNumber(supply.balance)}
       </p>

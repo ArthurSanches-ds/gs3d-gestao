@@ -12,7 +12,7 @@ export default async function PesarPage({ params }: PageProps<"/filamentos/[id]/
 
   return (
     <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-bold">Pesar filamento</h1>
+      <h1 className="text-2xl font-bold">Ajustar estoque</h1>
       <p className="text-muted-foreground mt-1 text-sm">
         {filament.color} · {filament.brand} · {filament.material}
       </p>

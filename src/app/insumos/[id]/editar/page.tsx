@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
+import { RemoveButton } from "@/components/remove-button";
 import { SimpleForm } from "@/components/simple-form";
 import { prisma } from "@/lib/db";
-import { updateSupply } from "./actions";
+import { removeSupply, updateSupply } from "./actions";
 
 export default async function EditarInsumoPage({ params }: PageProps<"/insumos/[id]/editar">) {
   const { id } = await params;
@@ -38,6 +39,20 @@ export default async function EditarInsumoPage({ params }: PageProps<"/insumos/[
           cancelHref="/insumos"
         />
       </div>
+
+      <section className="mt-10 space-y-2 border-t pt-6">
+        <h2 className="font-medium">Remover insumo</h2>
+        <p className="text-muted-foreground text-sm">
+          Se o insumo nunca foi usado, ele é apagado. Se já saiu em alguma venda, só some das listas
+          e o histórico continua certo. Cadastrar o mesmo nome de novo traz ele de volta.
+        </p>
+        <RemoveButton
+          action={removeSupply}
+          id={supply.id}
+          label="Remover"
+          confirmText={`Remover ${supply.name}?`}
+        />
+      </section>
     </main>
   );
 }

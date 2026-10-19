@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { RemoveState } from "@/components/remove-button";
 import type { FormState } from "@/components/simple-form";
 import { prisma } from "@/lib/db";
 import { readForm } from "@/lib/form-data";
@@ -64,5 +65,44 @@ export async function updateFilament(
   // O custo de todos os produtos que usam essa cor muda junto
   revalidatePath("/filamentos");
   revalidatePath("/produtos");
+  redirect("/filamentos");
+}
+
+// Nunca usado (sem receita e sem produção): apaga de vez.
+// Com histórico: só some das listas, para o custo das vendas antigas continuar batendo.
+export async function removeFilament(
+  _previousState: RemoveState,
+  formData: FormData,
+): Promise<RemoveState> {
+  const id = String(formData.get("id") ?? "");
+  const filament = await prisma.filament.findUnique({
+    where: { id },
+    include: {
+      products: { include: { product: { select: { name: true, archived: true } } } },
+      _count: { select: { movements: { where: { type: "CONSUMPTION" } } } },
+    },
+  });
+  if (!filament) return { message: "Filamento não encontrado." };
+
+  const usedBy = filament.products.filter((p) => !p.product.archived).map((p) => p.product.name);
+  if (usedBy.length > 0) {
+    return {
+      message: `Essa cor está na receita de: ${usedBy.join(", ")}. Troque a cor nesses produtos (ou arquive-os) antes de remover.`,
+    };
+  }
+
+  const neverUsed = filament.products.length === 0 && filament._count.movements === 0;
+  if (neverUsed) {
+    await prisma.$transaction([
+      prisma.filamentMovement.deleteMany({ where: { filamentId: id } }),
+      prisma.filament.delete({ where: { id } }),
+    ]);
+  } else {
+    await prisma.filament.update({ where: { id }, data: { active: false } });
+  }
+
+  revalidatePath("/filamentos");
+  revalidatePath("/produtos");
+  revalidatePath("/");
   redirect("/filamentos");
 }

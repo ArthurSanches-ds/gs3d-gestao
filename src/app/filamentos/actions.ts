@@ -68,6 +68,7 @@ const weighInSchema = z.object({
   filamentId: z.string().min(1),
   scaleGrams: decimalField({ min: 0 }),
   closedRolls: integerField({ min: 0 }),
+  direct: z.string(),
   note: z.string().trim().max(200, "Máximo de 200 caracteres."),
 });
 
@@ -75,7 +76,7 @@ export async function registerWeighIn(
   _previousState: FilamentFormState,
   formData: FormData,
 ): Promise<FilamentFormState> {
-  const values = readForm(formData, ["filamentId", "scaleGrams", "closedRolls", "note"]);
+  const values = readForm(formData, ["filamentId", "scaleGrams", "closedRolls", "direct", "note"]);
 
   const result = weighInSchema.safeParse(values);
   if (!result.success) {
@@ -98,7 +99,8 @@ export async function registerWeighIn(
   try {
     netGrams = weighInNetGrams({
       scaleGrams: result.data.scaleGrams,
-      spoolTareGrams: filament.spoolTareGrams.toString(),
+      // "Já sei quanto tem": o número digitado já é o filamento, sem carretel
+      spoolTareGrams: result.data.direct === "on" ? 0 : filament.spoolTareGrams.toString(),
       closedRolls: result.data.closedRolls,
       rollNetGrams: filament.rollNetGrams,
     });
@@ -171,6 +173,26 @@ export async function createFilament(
       material: { equals: data.material, mode: "insensitive" },
     },
   });
+  // Cor removida antes: traz de volta com os dados novos e o estoque informado
+  if (existing && !existing.active) {
+    await prisma.filament.update({
+      where: { id: existing.id },
+      data: {
+        ...data,
+        active: true,
+        movements: {
+          create: {
+            type: "WEIGH_IN",
+            grams: initialRolls * data.rollNetGrams,
+            note: "Reativado no cadastro",
+          },
+        },
+      },
+    });
+    revalidatePath("/filamentos");
+    redirect("/filamentos");
+  }
+
   if (existing) {
     return {
       status: "error",

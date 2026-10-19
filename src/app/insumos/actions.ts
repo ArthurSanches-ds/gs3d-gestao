@@ -133,6 +133,29 @@ export async function createSupply(
   const existing = await prisma.supply.findFirst({
     where: { name: { equals: data.name, mode: "insensitive" } },
   });
+  // Insumo removido antes: traz de volta com os dados novos e o saldo informado
+  if (existing && !existing.active) {
+    const previous = await getSupplyWithBalance(existing.id);
+    const adjustment = countAdjustment(previous?.balance ?? 0, initialQuantity);
+    await prisma.supply.update({
+      where: { id: existing.id },
+      data: {
+        ...data,
+        active: true,
+        movements: adjustment.isZero()
+          ? undefined
+          : {
+              create: {
+                type: "ADJUSTMENT",
+                quantity: adjustment.toString(),
+                note: "Reativado no cadastro",
+              },
+            },
+      },
+    });
+    done();
+  }
+
   if (existing) {
     return {
       status: "error",

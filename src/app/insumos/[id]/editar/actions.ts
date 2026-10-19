@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { RemoveState } from "@/components/remove-button";
 import type { FormState } from "@/components/simple-form";
 import { prisma } from "@/lib/db";
 import { readForm } from "@/lib/form-data";
@@ -53,5 +54,44 @@ export async function updateSupply(
   // O custo dos produtos que usam esse insumo muda junto
   revalidatePath("/insumos");
   revalidatePath("/produtos");
+  redirect("/insumos");
+}
+
+// Nunca usado (sem receita e sem venda): apaga de vez.
+// Com histórico: só some das listas, para o custo das vendas antigas continuar batendo.
+export async function removeSupply(
+  _previousState: RemoveState,
+  formData: FormData,
+): Promise<RemoveState> {
+  const id = String(formData.get("id") ?? "");
+  const supply = await prisma.supply.findUnique({
+    where: { id },
+    include: {
+      products: { include: { product: { select: { name: true, archived: true } } } },
+      _count: { select: { movements: { where: { type: "USE" } } } },
+    },
+  });
+  if (!supply) return { message: "Insumo não encontrado." };
+
+  const usedBy = supply.products.filter((p) => !p.product.archived).map((p) => p.product.name);
+  if (usedBy.length > 0) {
+    return {
+      message: `Esse insumo está na receita de: ${usedBy.join(", ")}. Tire ele desses produtos (ou arquive-os) antes de remover.`,
+    };
+  }
+
+  const neverUsed = supply.products.length === 0 && supply._count.movements === 0;
+  if (neverUsed) {
+    await prisma.$transaction([
+      prisma.supplyMovement.deleteMany({ where: { supplyId: id } }),
+      prisma.supply.delete({ where: { id } }),
+    ]);
+  } else {
+    await prisma.supply.update({ where: { id }, data: { active: false } });
+  }
+
+  revalidatePath("/insumos");
+  revalidatePath("/produtos");
+  revalidatePath("/");
   redirect("/insumos");
 }
